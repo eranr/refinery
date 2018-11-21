@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - OBJLoader2 basic usage</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #000;
+				color: #fff;
+				margin: 0 0 0 0;
+				padding: 0 0 0 0;
+				border: none;
+				cursor: default;
+			}
+			#info {
+				color: #fff;
+				position: absolute;
+				top: 10px;
+				width: 100%;
+				text-align: center;
+				z-index: 100;
+				display:block;
+			}
+			#info a {
+				color: #f00;
+				font-weight: bold;
+				text-decoration: underline;
+				cursor: pointer
+			}
+			#glFullscreen {
+				width: 100%;
+				height: 100vh;
+				min-width: 640px;
+				min-height: 360px;
+				position: relative;
+				overflow: hidden;
+				z-index: 0;
+			}
+			#example {
+				width: 100%;
+				height: 100%;
+				top: 0;
+				left: 0;
+				background-color: #000000;
+			}
+			#feedback {
+				color: darkorange;
+			}
+			#dat {
+				user-select: none;
+				position: absolute;
+				left: 0;
+				top: 0;
+				z-Index: 200;
+			}
+		</style>
+
+	</head>
+
+	<body>
+		<div id="glFullscreen">
+			<canvas id="example"></canvas>
+		</div>
+		<div id="dat">
+
+		</div>
+		<div id="info">
+			<a href="http://threejs.org" target="_blank" rel="noopener">three.js</a> - OBJLoader2 direct loader test
+			<div id="feedback"></div>
+		</div>
+
+		<script src="three.js"></script>
+		<script src="js/controls/TrackballControls.js"></script>
+		<script src="js/loaders/MTLLoader.js"></script>
+		<script src="js/libs/dat.gui.min.js"></script>
+
+		<script src="js/loaders/LoaderSupport.js"></script>
+		<script src="js/loaders/OBJLoader2.js"></script>
+		<script>
+
+			'use strict';
+
+			var OBJLoader2Example = function ( elementToBindTo ) {
+                                // this.container = null;
+				this.renderer = null;
+                                this.gui = null;
+                                this.pos = new THREE.Vector3();
+				this.canvas = elementToBindTo;
+				this.aspectRatio = 1;
+				this.recalcAspectRatio();
+
+				this.scene = null;
+				this.cameraDefaults = {
+					posCamera: new THREE.Vector3( 0.0, 175.0, 500.0 ),
+					posCameraTarget: new THREE.Vector3( 0, 0, 0 ),
+					near: 0.1,
+					far: 10000,
+					fov: 45
+				};
+				this.camera = null;
+				this.cameraTarget = this.cameraDefaults.posCameraTarget;
+
+				this.controls = null;
+			};
+
+			OBJLoader2Example.prototype = {
+
+				constructor: OBJLoader2Example,
+
+				initGL: function () {
+                                        // container
+                                        // this.container = document.createElement( 'div' );
+                                        // document.body.appendChild( this.container );
+
+					this.renderer = new THREE.WebGLRenderer( {
+						canvas: this.canvas,
+						antialias: true,
+						autoClear: true
+					} );
+					this.renderer.setClearColor( 0x050505 );
+                                        // this.container.appendChild( this.renderer.domElement );
+
+                                        //this.gui = new dat.GUI();
+                                        //this.gui.add( this.pos, 'x').name('X').onChange();
+                                        //this.gui.add( this.pos, 'y').name('Y').onChange();
+                                        //this.gui.add( this.pos, 'z').name('Z').onChange();
+
+					this.scene = new THREE.Scene();
+
+					this.camera = new THREE.PerspectiveCamera( this.cameraDefaults.fov, this.aspectRatio, this.cameraDefaults.near, this.cameraDefaults.far );
+				        this.camera.layers.enable( 0 ); // enabled by default
+				        this.camera.layers.enable( 1 ); // readers layer
+
+					this.resetCamera();
+                                        this.controls = new THREE.TrackballControls( this.camera, this.renderer.domElement );
+                                        // this.controls = new THREE.TrackballControls( this.camera, this.container );
+
+                                        var hemiLight;
+                                        hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.6 );
+                                        hemiLight.color.setHSL( 0.6, 1, 0.6 );
+                                        hemiLight.groundColor.setHSL( 0.095, 1, 0.75 );
+                                        hemiLight.position.set( 0, 50, 0 );
+                                        hemiLight.layers.enable( 0 );
+                                        hemiLight.layers.enable( 1 );
+
+					//var ambientLight = new THREE.AmbientLight( 0x404040 );
+					// var ambientLight = new THREE.AmbientLight( 0xffffff );
+                                        // ambientLight.layers.enable(0)
+                                        // ambientLight.layers.enable(1)
+					var directionalLight1 = new THREE.DirectionalLight( 0xC0C090 );
+					// var directionalLight1 = new THREE.DirectionalLight( 0xffffff );
+                                        // directionalLight1.layers.enable(0)
+                                        // directionalLight1.layers.enable(1)
+					var directionalLight2 = new THREE.DirectionalLight( 0xC0C090 );
+					// var directionalLight2 = new THREE.DirectionalLight( 0xffffff);
+                                        //directionalLight2.layers.enable(0)
+                                        //directionalLight2.layers.enable(1)
+
+					directionalLight1.position.set( -100, -50, 100 );
+					directionalLight2.position.set( 100, 50, -100 );
+
+					this.scene.add( directionalLight1 );
+					this.scene.add( directionalLight2 );
+					// this.scene.add( ambientLight );
+                                        this.scene.add( hemiLight );
+
+					var helper = new THREE.GridHelper( 1200, 60, 0xFF4444, 0x404040 );
+					this.scene.add( helper );
+				},
+
+				initContent: function () {
+					var modelName = 'Refinery';
+					this._reportProgress( { detail: { text: 'Loading: ' + modelName } } );
+
+					var scope = this;
+					var objLoader = new THREE.OBJLoader2();
+					var callbackOnLoad = function ( event ) {
+						scope.scene.add( event.detail.loaderRootNode );
+						console.log( 'Loading complete: ' + event.detail.modelName );
+						scope._reportProgress( { detail: { text: '' } } );
+					};
+
+					var onLoadMtl = function ( materials ) {
+						objLoader.setModelName( modelName );
+						objLoader.setMaterials( materials );
+						objLoader.setLogging( true, true );
+						objLoader.load( 'Refinery.obj', callbackOnLoad, null, null, null, false );
+					};
+					// objLoader.loadMtl( 'models/obj/female02/female02.mtl', null, onLoadMtl );
+					objLoader.loadMtl( 'verify.mtl', null, onLoadMtl );
+				},
+
+				_reportProgress: function( event ) {
+					var output = THREE.LoaderSupport.Validator.verifyInput( event.detail.text, '' );
+					console.log( 'Progress: ' + output );
+					document.getElementById( 'feedback' ).innerHTML = output;
+				},
+
+				resizeDisplayGL: function () {
+					this.controls.handleResize();
+
+					this.recalcAspectRatio();
+					this.renderer.setSize( this.canvas.offsetWidth, this.canvas.offsetHeight, false );
+
+					this.updateCamera();
+				},
+
+				recalcAspectRatio: function () {
+					this.aspectRatio = ( this.canvas.offsetHeight === 0 ) ? 1 : this.canvas.offsetWidth / this.canvas.offsetHeight;
+				},
+
+				resetCamera: function () {
+					this.camera.position.copy( this.cameraDefaults.posCamera );
+					this.cameraTarget.copy( this.cameraDefaults.posCameraTarget );
+
+					this.updateCamera();
+				},
+
+				updateCamera: function () {
+					this.camera.aspect = this.aspectRatio;
+					this.camera.lookAt( this.cameraTarget );
+					this.camera.updateProjectionMatrix();
+				},
+
+                                updateReaders : function() {
+				    var geometry = new THREE.BoxBufferGeometry( 2, 4, 2 );
+				    var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: 0xff0000 } ) );
+                                    object.position.x = -80;
+                                    object.position.y = 20;
+                                    object.position.z = 20;
+                                    //object.rotation.x = Math.random() * 2 * Math.PI;
+                                    //object.rotation.y = Math.random() * 2 * Math.PI;
+                                    //object.rotation.z = Math.random() * 2 * Math.PI;
+                                    //object.scale.x = Math.random() + 0.5;
+                                    //object.scale.y = Math.random() + 0.5;
+                                    //object.scale.z = Math.random() + 0.5;
+
+                                    object.layers.set( 1 );
+                                    this.scene.add( object );
+                                },
+
+				render: function () {
+					if ( ! this.renderer.autoClear ) this.renderer.clear();
+					this.controls.update();
+                                        this.updateReaders();
+					this.renderer.render( this.scene, this.camera );
+				}
+
+			};
+
+			var app = new OBJLoader2Example( document.getElementById( 'example' ) );
+
+			var resizeWindow = function () {
+				app.resizeDisplayGL();
+			};
+
+			var render = function () {
+				requestAnimationFrame( render );
+				app.render();
+			};
+
+                        var onMouseClick = function( event ) {
+                            console.log('mouse click');
+                            var vec = new THREE.Vector3(); // create once and reuse
+                            var pos_ = new THREE.Vector3(); // create once and reuse
+
+                            vec.set(
+                                ( event.clientX / window.innerWidth ) * 2 - 1,
+                                - ( event.clientY / window.innerHeight ) * 2 + 1,
+                                0.5 );
+                            vec.unproject( this.camera );
+                            vec.sub( this.camera.position ).normalize();
+                            var distance = - this.camera.position.z / vec.z;
+                            pos_.copy( this.camera.position ).add( vec.multiplyScalar( distance ) );
+                            this.pos.x = pos_.x;
+                            this.pos.y = pos_.y;
+                            this.pos.z = pos_.z;
+                        };
+
+                        //window.addEventListener( 'mousedown', onMouseClick, true );
+			window.addEventListener( 'resize', resizeWindow, false );
+
+			console.log( 'Starting initialisation phase...' );
+			app.initGL();
+			app.resizeDisplayGL();
+			app.initContent();
+
+			render();
+
+		</script>
+	</body>
+</html>
