@@ -68,7 +68,7 @@
 
 		</div>
 		<div id="info">
-			<a href="http://threejs.org" target="_blank" rel="noopener">three.js</a> - OBJLoader2 direct loader test
+			<a href="http://threejs.org" target="_blank" rel="noopener">three.js</a>
 			<div id="feedback"></div>
 		</div>
 
@@ -121,12 +121,9 @@
 						autoClear: true
 					} );
 					this.renderer.setClearColor( 0x050505 );
-                                        // this.container.appendChild( this.renderer.domElement );
 
-                                        //this.gui = new dat.GUI();
-                                        //this.gui.add( this.pos, 'x').name('X').onChange();
-                                        //this.gui.add( this.pos, 'y').name('Y').onChange();
-                                        //this.gui.add( this.pos, 'z').name('Z').onChange();
+
+                                        // this.container.appendChild( this.renderer.domElement );
 
 					this.scene = new THREE.Scene();
 
@@ -135,6 +132,7 @@
 				        this.camera.layers.enable( 1 ); // readers layer
 
 					this.resetCamera();
+
                                         this.controls = new THREE.TrackballControls( this.camera, this.renderer.domElement );
                                         // this.controls = new THREE.TrackballControls( this.camera, this.container );
 
@@ -152,23 +150,44 @@
                                         // ambientLight.layers.enable(1)
 					var directionalLight1 = new THREE.DirectionalLight( 0xC0C090 );
 					// var directionalLight1 = new THREE.DirectionalLight( 0xffffff );
-                                        // directionalLight1.layers.enable(0)
-                                        // directionalLight1.layers.enable(1)
+                                        directionalLight1.layers.enable(0)
+                                        directionalLight1.layers.enable(1)
 					var directionalLight2 = new THREE.DirectionalLight( 0xC0C090 );
 					// var directionalLight2 = new THREE.DirectionalLight( 0xffffff);
-                                        //directionalLight2.layers.enable(0)
-                                        //directionalLight2.layers.enable(1)
+                                        directionalLight2.layers.enable(0)
+                                        directionalLight2.layers.enable(1)
+					var directionalLight3 = new THREE.DirectionalLight( 0xC0C090 );
+                                        directionalLight3.layers.enable(0)
+                                        directionalLight3.layers.enable(1)
 
 					directionalLight1.position.set( -100, -50, 100 );
 					directionalLight2.position.set( 100, 50, -100 );
+					directionalLight3.position.set( 0, 0, -100 );
 
 					this.scene.add( directionalLight1 );
 					this.scene.add( directionalLight2 );
+					this.scene.add( directionalLight3 );
 					// this.scene.add( ambientLight );
                                         this.scene.add( hemiLight );
 
 					var helper = new THREE.GridHelper( 1200, 60, 0xFF4444, 0x404040 );
 					this.scene.add( helper );
+
+                                        var layers = { background: true, readers: true };
+                                        //
+                                        // Init gui
+                                        this.gui = new dat.GUI();
+                                        this.gui.add( layers, 'background' ).onChange( function () {
+
+                                            this.camera.layers.toggle( 0 );
+
+                                        } );
+                                        this.gui.add( layers, 'readers' ).onChange( function () {
+
+                                            this.camera.layers.toggle( 1 );
+
+                                        } );
+
 				},
 
 				initContent: function () {
