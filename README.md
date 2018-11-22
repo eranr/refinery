@@ -9,7 +9,7 @@
 
 # Running three.js examples
 
-1. Clone the three.js git repo
+1. git clone https://github.com/mrdoob/three.js.git
 1. from this repo copy the content of for_three_examples to three.js root repo
 1. cd three.js
 1. docker-compose build
