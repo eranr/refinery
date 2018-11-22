@@ -1,0 +1,15 @@
+version: '2'
+
+services:
+
+  entry:
+    build: examples_entry
+    ports:
+       - 8080:8080
+    volumes:
+       - .:/www/static:ro
+       - socket:/var/run/wsgi
+    restart: unless-stopped
+
+volumes:
+   socket:
