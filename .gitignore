@@ -9,3 +9,5 @@ npm-debug.log
 .vs/
 test/unit/three.*.unit.js
 Refinery.obj
+drone.mtl
+drone.obj
