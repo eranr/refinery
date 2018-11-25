@@ -65,10 +65,14 @@
 			<canvas id="example"></canvas>
 		</div>
 		<div id="dat">
-
+                        <p style="color:#4dff4d;">None</p>
+                        <p style="color:#33adff;">Low</p>
+                        <p style="color:#ffff1a;">Medium</p>
+                        <p style="color:#ff8000;">High</p>
+                        <p style="color:#ff1a1a;">Dangerous</p>
 		</div>
 		<div id="info">
-			<a href="http://threejs.org" target="_blank" rel="noopener">three.js</a>
+			<a href="http://threejs.org" target="_blank" rel="noopener">Benzene Monitoring</a>
 			<div id="feedback"></div>
 		</div>
 
@@ -79,6 +83,7 @@
 
 		<script src="js/loaders/LoaderSupport.js"></script>
 		<script src="js/loaders/OBJLoader2.js"></script>
+                <script src="js/renderers/CSS2DRenderer.js"></script>
 		<script>
 
 			'use strict';
@@ -86,8 +91,8 @@
 			var OBJLoader2Example = function ( elementToBindTo ) {
                                 // this.container = null;
 				this.renderer = null;
-                                this.gui = null;
                                 this.pos = new THREE.Vector3();
+                                this.drone = null;
 				this.canvas = elementToBindTo;
 				this.aspectRatio = 1;
 				this.recalcAspectRatio();
@@ -102,9 +107,145 @@
 				};
 				this.camera = null;
 				this.cameraTarget = this.cameraDefaults.posCameraTarget;
+				this.droneCameraDefaults = {
+					posCamera: new THREE.Vector3( 0.0, 175.0, 500.0 ),
+					posCameraTarget: new THREE.Vector3( 0, 0, 0 ),
+					near: 0.1,
+					far: 10000,
+					fov: 90
+				};
+				this.droneCamera = null;
+				this.droneCameraTarget = this.droneCameraDefaults.posCameraTarget;
 
 				this.controls = null;
 			};
+
+                        var concentrations = {
+                            danger: 0xff1a1a,
+                            high: 0xff8000,
+                            medium: 0xffff1a,
+                            low: 0x33adff,
+                            none: 0x4dff4d 
+                        }
+
+                        var Readers = {
+                            P1: {
+                                location: new THREE.Vector3(-80, 20, -52),
+                                concentration: concentrations.low
+                            },
+                            P2: {
+                                location: new THREE.Vector3(-80, 20, -23),
+                                concentration: concentrations.low
+                            },
+                            P3: {
+                                location: new THREE.Vector3(-80, 20, 2),
+                                concentration: concentrations.low
+                            },
+                            P4: {
+                                location: new THREE.Vector3(-80, 20, 28),
+                                concentration: concentrations.low
+                            },
+                            P5: {
+                                location: new THREE.Vector3(-45, 12, 13),
+                                concentration: concentrations.medium
+                            },
+                            P6: {
+                                location: new THREE.Vector3(-21, 12, 11),
+                                concentration: concentrations.medium
+                            },
+                            P7: {
+                                location: new THREE.Vector3(-21, 12, 19),
+                                concentration: concentrations.medium
+                            },
+                            P8: {
+                                location: new THREE.Vector3(20, 8, 9),
+                                concentration: concentrations.high
+                            },
+                            P9: {
+                                location: new THREE.Vector3(28, 8, 9),
+                                concentration: concentrations.high
+                            }
+                        }
+
+                        function* droneConcentration() {
+                            var i;
+                            for (i = 0; i < steps; i++) {
+                                if ( i < 500 ) {
+                                    yield 'none'
+                                } else if ( i < 800 ) {
+                                    yield 'low'
+                                } else if (i < 1000 ) {
+                                    yield 'low'
+                                }
+                            }
+                            for (i = 0; i < steps; i++) {
+                                if ( i < 100) {
+                                    yield 'none'
+                                } else if ( i > 100 && i < 200) {
+                                    yield 'low'
+                                } else if (i > 200  && i < 300) {
+                                    yield 'medium'
+                                } else if (i > 300  && i < 400) {
+                                    yield 'high'
+                                } else if (i > 400  && i < 500) {
+                                    yield 'low'
+                                } else if (i > 500  && i < 600) {
+                                    yield 'high'
+                                } else if (i > 600  && i < 700) {
+                                    yield 'medium'
+                                } else if (i > 700  && i < 800) {
+                                    yield 'high'
+                                } else if (i > 800 ) {
+                                    yield 'danger'
+                                }
+                            }
+                            while (true) {
+                                yield 'danger'
+                            }
+                        }
+
+                        const droneConcentrationIterator = droneConcentration();
+
+                        function* dronePath() {
+                            var pos = new THREE.Vector3(0,0,0);
+                            var angle = 6.0 * Math.PI;
+                            var angle_step = angle / steps;
+                            var radius = 30.0;
+                            var radius_step = radius / steps;
+                            var height = 50.0;
+                            var height_step = (height-2) / steps;
+                            var startPoint = new THREE.Vector3(-80, 0, 80);
+                            var midPoint = new THREE.Vector3(radius * Math.cos(angle), 50, radius * Math.sin(angle))
+                            var x;
+                            var y;
+                            var z;
+                            var i;
+                            pos.x = startPoint.x - 15;
+                            pos.y = startPoint.y;
+                            pos.z = startPoint.z - 15;
+                            for (i = 0; i < steps; i++) {
+                                pos.x = pos.x + (midPoint.x - startPoint.x) / steps;
+                                pos.y = pos.y + (midPoint.y - startPoint.y) / steps;
+                                pos.z = pos.z + (midPoint.z - startPoint.z) / steps;
+                                yield(pos);
+                            }
+                            for (i = 0; i < steps; i++) {
+                                radius = radius - radius_step;
+                                angle = angle - angle_step;
+                                height = height - height_step;
+                                pos.x = -15 + radius * Math.cos(angle);
+                                pos.y = height;
+                                pos.z = -15 + radius * Math.sin(angle);
+                                yield(pos);
+                            }
+                            while (true) {
+                                yield(pos);
+                            }
+                        }
+
+                        const dronePathIterator = dronePath();
+
+                        var steps = 400;
 
 			OBJLoader2Example.prototype = {
 
@@ -130,8 +271,12 @@
 					this.camera = new THREE.PerspectiveCamera( this.cameraDefaults.fov, this.aspectRatio, this.cameraDefaults.near, this.cameraDefaults.far );
 				        this.camera.layers.enable( 0 ); // enabled by default
 				        this.camera.layers.enable( 1 ); // readers layer
-
 					this.resetCamera();
+                                        this.scene.activeCamera = this.camera
+
+					this.droneCamera = new THREE.PerspectiveCamera( this.droneCameraDefaults.fov, this.aspectRatio, this.droneCameraDefaults.near, this.droneCameraDefaults.far );
+				        this.droneCamera.layers.enable( 0 ); // enabled by default
+				        this.droneCamera.layers.enable( 1 ); // readers layer
 
                                         this.controls = new THREE.TrackballControls( this.camera, this.renderer.domElement );
                                         // this.controls = new THREE.TrackballControls( this.camera, this.container );
@@ -173,22 +318,44 @@
 					var helper = new THREE.GridHelper( 1200, 60, 0xFF4444, 0x404040 );
 					this.scene.add( helper );
 
-                                        var layers = { background: true, readers: true };
+                                        var layers = { background: true, readers: true, camera: true };
                                         //
                                         // Init gui
-                                        this.gui = new dat.GUI();
-                                        this.gui.add( layers, 'background' ).onChange( function () {
-
-                                            this.camera.layers.toggle( 0 );
-
+                                        var scope = this;
+                                        var gui = new dat.GUI();
+                                        gui.add( layers, 'background' ).onChange( function () {
+                                            scope.camera.layers.toggle( 0 );
+                                            scope.droneCamera.layers.toggle( 0 );
                                         } );
-                                        this.gui.add( layers, 'readers' ).onChange( function () {
-
-                                            this.camera.layers.toggle( 1 );
-
+                                        gui.add( layers, 'readers' ).onChange( function () {
+                                            scope.camera.layers.toggle( 1 );
+                                            scope.droneCamera.layers.toggle( 1 );
                                         } );
-
+                                        gui.add( layers, 'camera').onChange( function () {
+                                            console.log(layers.camera)
+                                            if (layers.camera == true) {
+                                                scope.scene.activeCamera = scope.droneCamera
+                                            } else {
+                                                scope.scene.activeCamera = scope.camera
+                                            }
+                                        } );
 				},
+
+                                initColorMap: function() {
+				    var geometry = new THREE.BoxBufferGeometry( 1, 1, 1 );
+				    var none = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: concentrations.none } ) );
+                                    none.position.x = -100;
+                                    none.position.y = 100;
+                                    none.position.z = 200;
+                                    var noneDiv = document.createElement( 'div' );
+				    noneDiv.className = 'label';
+				    noneDiv.textContent = 'None';
+				    noneDiv.style.marginTop = '-1em';
+				    var noneLabel = new THREE.CSS2DObject( noneDiv );
+				    noneLabel.position.set( 10, 15, 10 );
+				    none.add( noneLabel );
+                                    this.scene.add( none );
+                                },
 
 				initContent: function () {
 					var modelName = 'Refinery';
@@ -208,8 +375,34 @@
 						objLoader.setLogging( true, true );
 						objLoader.load( 'Refinery.obj', callbackOnLoad, null, null, null, false );
 					};
-					// objLoader.loadMtl( 'models/obj/female02/female02.mtl', null, onLoadMtl );
 					objLoader.loadMtl( 'verify.mtl', null, onLoadMtl );
+                                },
+
+				initDrone: function () {
+					var modelName = 'Drone';
+					this._reportProgress( { detail: { text: 'Loading: ' + modelName } } );
+
+                                        var scope = this;
+                                        var objLoader = new THREE.OBJLoader2();
+                                        var callbackOnLoad = function ( event ) {
+                                            scope.drone = new THREE.Object3D();
+                                            scope.drone.name = 'Drone';
+                                            scope.drone.position.set( -100, 100, 100 );
+                                            scope.drone.layers.set( 1 );
+                                            // var scale = 0.5;
+                                            // scope.drone.scale.set( scale, scale, scale );
+                                            scope.drone.add( event.detail.loaderRootNode );
+                                            scope._reportProgress( { detail: { text: 'Loading complete: ' + event.detail.modelName } } );
+                                            // scope.scene.add( scope.drone );
+                                        };
+
+                                        var onLoadMtl = function ( materials ) {
+						objLoader.setModelName( modelName );
+						objLoader.setMaterials( materials );
+						objLoader.terminateWorkerOnLoad = false;
+						objLoader.load( 'drone.obj', callbackOnLoad, null, null, null, true );
+					};
+					objLoader.loadMtl( 'drone.mtl', null, onLoadMtl );
 				},
 
 				_reportProgress: function( event ) {
@@ -245,27 +438,56 @@
 				},
 
                                 updateReaders : function() {
-				    var geometry = new THREE.BoxBufferGeometry( 2, 4, 2 );
-				    var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: 0xff0000 } ) );
-                                    object.position.x = -80;
-                                    object.position.y = 20;
-                                    object.position.z = 20;
-                                    //object.rotation.x = Math.random() * 2 * Math.PI;
-                                    //object.rotation.y = Math.random() * 2 * Math.PI;
-                                    //object.rotation.z = Math.random() * 2 * Math.PI;
-                                    //object.scale.x = Math.random() + 0.5;
-                                    //object.scale.y = Math.random() + 0.5;
-                                    //object.scale.z = Math.random() + 0.5;
+                                    for (var reader in Readers) {
+                                        var location = Readers[reader].location;
+                                        var concentration = Readers[reader].concentration;
+				        var geometry = new THREE.BoxBufferGeometry( 2, 4, 2 );
+				        var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: concentration } ) );
+                                        object.position.x = location.x;
+                                        object.position.y = location.y;
+                                        object.position.z = location.z;
+                                        //object.rotation.x = Math.random() * 2 * Math.PI;
+                                        //object.rotation.y = Math.random() * 2 * Math.PI;
+                                        //object.rotation.z = Math.random() * 2 * Math.PI;
+                                        //object.scale.x = Math.random() + 0.5;
+                                        //object.scale.y = Math.random() + 0.5;
+                                        //object.scale.z = Math.random() + 0.5;
 
-                                    object.layers.set( 1 );
-                                    this.scene.add( object );
+                                        object.layers.set( 1 );
+                                        this.scene.add( object );
+                                    }
+
+                                    if ( this.drone ) {
+                                        var droneLocation = dronePathIterator.next().value
+                                        var concentration = droneConcentrationIterator.next().value
+                                        var color = concentrations[concentration]
+                                        if ( droneLocation != null ) {
+                                            this.drone.position.x = droneLocation.x;
+                                            this.drone.position.y = droneLocation.y;
+                                            this.drone.position.z = droneLocation.z;
+                                        } else {
+                                            this.drone.position.x = -100;
+                                            this.drone.position.y = 100;
+                                            this.drone.position.z = 0 * Math.random() * 100;
+                                        }
+                                        this.droneCamera.position.copy(this.drone.position);
+                                        this.droneCamera.position.y = this.droneCamera.position.y - 2;
+                                        //this.droneCamera.Translate(0, 0, 0);
+                                        var scale = 1;
+				        var geometry = new THREE.BoxBufferGeometry( 1, 2, 1 );
+				        var reader = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: color } ) );
+                                        this.drone.add(reader);
+                                        this.drone.scale.set( scale, scale, scale );
+                                        this.drone.layers.set( 1 );
+                                        this.scene.add( this.drone );
+                                    }
                                 },
 
 				render: function () {
 					if ( ! this.renderer.autoClear ) this.renderer.clear();
 					this.controls.update();
                                         this.updateReaders();
-					this.renderer.render( this.scene, this.camera );
+					this.renderer.render( this.scene, this.scene.activeCamera );
 				}
 
 			};
@@ -304,8 +526,11 @@
 
 			console.log( 'Starting initialisation phase...' );
 			app.initGL();
+                        //app.initColorMap();
 			app.resizeDisplayGL();
 			app.initContent();
+                        app.initDrone();
+                        
 
 			render();
 
